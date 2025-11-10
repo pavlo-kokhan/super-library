@@ -1,0 +1,6 @@
+﻿FROM mcr.microsoft.com/dotnet/sdk:9.0
+WORKDIR /app
+COPY . .
+RUN dotnet publish Services/Booking/Booking.Api/Booking.Api.csproj -c Release -o out
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "out/Booking.Api.dll"]

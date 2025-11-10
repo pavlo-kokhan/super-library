@@ -7,25 +7,25 @@ using SuperLibrary.RabbitMQ.Abstractions;
 using SuperLibrary.RabbitMQ.Constants;
 using SuperLibrary.RabbitMQ.Models.Booking;
 
-namespace Booking.Api.Application.Services;
+namespace Booking.Api.Application.Services.Publishers;
 
-public class BookingCreatedPublisher : IRabbitMqPublisher<BookingCreatedMessage>
+public class BookingUpdatedPublisher : IRabbitMqPublisher<BookingUpdatedMessage>
 {
     private readonly RabbitMqOptions _rabbitMqOptions;
     private readonly IConnectionFactory _factory;
-    private readonly ILogger<BookingCreatedPublisher> _logger;
+    private readonly ILogger<BookingUpdatedPublisher> _logger;
 
-    public BookingCreatedPublisher(
+    public BookingUpdatedPublisher(
         IOptions<RabbitMqOptions> rabbitMqOptions, 
         IConnectionFactory factory, 
-        ILogger<BookingCreatedPublisher> logger)
+        ILogger<BookingUpdatedPublisher> logger)
     {
         _rabbitMqOptions = rabbitMqOptions.Value;
         _factory = factory;
         _logger = logger;
     }
-
-    public async Task PublishAsync(BookingCreatedMessage message, CancellationToken cancellationToken)
+    
+    public async Task PublishAsync(BookingUpdatedMessage message, CancellationToken cancellationToken)
     {
         await using var connection = await _factory.CreateConnectionAsync(cancellationToken);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
@@ -42,7 +42,7 @@ public class BookingCreatedPublisher : IRabbitMqPublisher<BookingCreatedMessage>
 
         await channel.BasicPublishAsync(
             exchange: _rabbitMqOptions.ExchangeName,
-            routingKey: RoutingKeys.BookingCreated,
+            routingKey: RoutingKeys.BookingUpdated,
             body: body,
             cancellationToken: cancellationToken);
         

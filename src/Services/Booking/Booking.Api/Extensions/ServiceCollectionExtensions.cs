@@ -1,4 +1,4 @@
-﻿using Booking.Api.Application.Services;
+﻿using Booking.Api.Application.Services.Publishers;
 using SuperLibrary.RabbitMQ.Abstractions;
 using SuperLibrary.RabbitMQ.Models.Booking;
 
@@ -8,5 +8,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddPublishers(this IServiceCollection services) 
         => services
-            .AddScoped<IRabbitMqPublisher<BookingCreatedMessage>, BookingCreatedPublisher>();
+            .AddScoped<IRabbitMqPublisher<BookingCreatedMessage>, BookingCreatedPublisher>()
+            .AddScoped<IRabbitMqPublisher<BookingUpdatedMessage>, BookingUpdatedPublisher>()
+            .AddScoped<IRabbitMqPublisher<BookingDeletedMessage>, BookingDeletedPublisher>();
 }

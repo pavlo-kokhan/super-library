@@ -6,6 +6,7 @@ public class RabbitMqOptions
     public int Port { get; set; }
     public string UserName { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public string BookingCreatedExchangeName { get; set; } = string.Empty;
+    public string BookingExchangeName { get; set; } = string.Empty;
     public string BookingsQueueName { get; set; } = string.Empty;
+    public string BookingsQueueRoutingKey { get; set; } = string.Empty;
 }

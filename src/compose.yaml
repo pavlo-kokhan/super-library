@@ -1,18 +1,69 @@
-﻿version: "3.9"
+﻿version: '3.9'
 
 services:
+  booking.api:
+    image: booking.api
+    container_name: Booking.Api
+    hostname: booking.api
+    build:
+      context: .
+      dockerfile: Services/Booking/Booking.Api/Dockerfile
+    ports:
+      - "5001:8081"
+      - "5101:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  library.api:
+    image: library.api
+    container_name: Library.Api
+    hostname: library.api
+    build:
+      context: .
+      dockerfile: Services/Library/Library.Api/Dockerfile
+    ports:
+      - "5002:8081"
+      - "5102:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - postgres
+
+  notification.api:
+    image: notification.api
+    container_name: Notification.Api
+    hostname: notification.api
+    build:
+      context: .
+      dockerfile: Services/Notification/Notification.Api/Dockerfile
+    ports:
+      - "5003:8081"
+      - "5103:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - rabbitmq
+
   postgres:
     image: postgres:latest
+    container_name: SuperLibrary.Postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: SuperPassword
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
 
   rabbitmq:
     image: rabbitmq:4-management
+    container_name: SuperLibrary.Rabbitmq
     hostname: rabbitmq
     ports:
       - "5672:5672"
@@ -21,8 +72,18 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq/mnesia/rabbit@my-rabbit
+      - rabbitmq_data:/var/lib/rabbitmq/data
+        
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: SuperLibrary.Jaeger
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "16686:16686"
 
 volumes:
   postgres_data:
   rabbitmq_data:
+  
+

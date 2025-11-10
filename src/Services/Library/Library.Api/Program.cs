@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
-using DotNetEnv;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Library.Infrastructure;
@@ -9,15 +8,26 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Npgsql;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 using SuperLibrary.Web.Extensions;
 using SuperLibrary.Web.Filters;
-using SuperLibrary.Web.Helpers;
 using SuperLibrary.Web.Pipelines;
 
-Env.Load(Path.Combine(Directory.GetCurrentDirectory(), "config.env"));
-
 var builder = WebApplication.CreateBuilder(args);
+
+builder
+    .Services
+    .AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(serviceName: "Library.Api", serviceVersion: "1.0.0"))
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation()
+            .AddOtlpExporter();
+    });
 
 builder
     .Services
@@ -35,12 +45,14 @@ builder
     .AddSingleton(typeof(IPipelineBehavior<,>), typeof(DefaultLoggingPipeline<,>))
     .AddDbContext<ApplicationDbContext>(options =>
     {
-        var dataSource = new NpgsqlDataSourceBuilder(DotNetEnvHelper.GetEnvironmentVariableOrThrow("DB_CONNECTION_STRING"))
+        var dataSource = new NpgsqlDataSourceBuilder(builder.Configuration["ConnectionStrings:Postgres"]!)
             .EnableDynamicJson()
             .Build();
 
         options.UseNpgsql(dataSource);
-        options.ConfigureWarnings(warningsConfigurationBuilder => warningsConfigurationBuilder.Ignore(RelationalEventId.PendingModelChangesWarning));
+        options.ConfigureWarnings(warningsConfigurationBuilder 
+            => warningsConfigurationBuilder
+                .Ignore(RelationalEventId.PendingModelChangesWarning));
         
     })
     .AddControllers(options =>

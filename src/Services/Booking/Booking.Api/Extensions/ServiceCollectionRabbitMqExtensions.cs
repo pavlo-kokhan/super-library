@@ -7,15 +7,15 @@ namespace Booking.Api.Extensions;
 
 public static class ServiceCollectionRabbitMqExtensions
 {
-    public static IServiceCollection AddRabbitMq(this IServiceCollection services) 
+    public static IServiceCollection AddRabbitMq(this IServiceCollection services, IConfiguration configuration) 
         => services
             .Configure<RabbitMqOptions>(options =>
             {
-                options.HostName = DotNetEnvHelper.GetEnvironmentVariableOrThrow("RABBITMQ_HOST");
-                options.Port = int.Parse(DotNetEnvHelper.GetEnvironmentVariableOrThrow("RABBITMQ_PORT"));
-                options.UserName = DotNetEnvHelper.GetEnvironmentVariableOrThrow("RABBITMQ_USERNAME");
-                options.Password = DotNetEnvHelper.GetEnvironmentVariableOrThrow("RABBITMQ_PASSWORD");
-                options.ExchangeName = DotNetEnvHelper.GetEnvironmentVariableOrThrow("RABBITMQ_EXCHANGE");
+                options.HostName = configuration["RabbitMq:Host"]!;
+                options.Port = int.Parse(configuration["RabbitMq:Port"]!);
+                options.UserName = configuration["RabbitMq:UserName"]!;
+                options.Password = configuration["RabbitMq:Password"]!;
+                options.ExchangeName = configuration["RabbitMq:Exchange"]!;;
             })
             .AddSingleton<IConnectionFactory>(sp =>
             {
@@ -26,7 +26,9 @@ public static class ServiceCollectionRabbitMqExtensions
                     HostName = options.HostName,
                     Port = options.Port,
                     UserName = options.UserName,
-                    Password = options.Password
+                    Password = options.Password,
+                    AutomaticRecoveryEnabled = true,
+                    NetworkRecoveryInterval = TimeSpan.FromSeconds(5)
                 };
             });
 }

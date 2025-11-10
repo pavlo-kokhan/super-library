@@ -7,16 +7,16 @@ using SuperLibrary.RabbitMQ.Constants;
 
 namespace Notification.Api.BackgroundServices;
 
-public class BookingCreatedConsumer : BackgroundService
+public class BookingConsumer : BackgroundService
 {
     private readonly RabbitMqOptions _rabbitMqOptions;
     private readonly IConnectionFactory _factory;
-    private readonly ILogger<BookingCreatedConsumer> _logger;
+    private readonly ILogger<BookingConsumer> _logger;
 
-    public BookingCreatedConsumer(
+    public BookingConsumer(
         IOptions<RabbitMqOptions> rabbitMqOptions, 
         IConnectionFactory factory, 
-        ILogger<BookingCreatedConsumer> logger)
+        ILogger<BookingConsumer> logger)
     {
         _rabbitMqOptions = rabbitMqOptions.Value;
         _factory = factory;
@@ -29,7 +29,7 @@ public class BookingCreatedConsumer : BackgroundService
         await using var channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
         
         await channel.ExchangeDeclareAsync(
-            exchange: _rabbitMqOptions.BookingCreatedExchangeName,
+            exchange: _rabbitMqOptions.BookingExchangeName,
             type: ExchangeType.Topic,
             durable: true,
             autoDelete: false,
@@ -44,8 +44,8 @@ public class BookingCreatedConsumer : BackgroundService
 
         await channel.QueueBindAsync(
             queue: _rabbitMqOptions.BookingsQueueName,
-            exchange: _rabbitMqOptions.BookingCreatedExchangeName,
-            routingKey: RoutingKeys.BookingCreated,
+            exchange: _rabbitMqOptions.BookingExchangeName,
+            routingKey: _rabbitMqOptions.BookingsQueueRoutingKey,
             cancellationToken: stoppingToken);
 
         var consumer = new AsyncEventingBasicConsumer(channel);
@@ -68,9 +68,9 @@ public class BookingCreatedConsumer : BackgroundService
         
         _logger.LogInformation(
             "{Consumer} started executing. Listening {Queue} on {Exchange} rk: {RoutingKey}",
-            nameof(BookingCreatedConsumer),
+            nameof(BookingConsumer),
             _rabbitMqOptions.BookingsQueueName,
-            _rabbitMqOptions.BookingCreatedExchangeName,
+            _rabbitMqOptions.BookingExchangeName,
             RoutingKeys.BookingCreated);
         
         while (!stoppingToken.IsCancellationRequested)

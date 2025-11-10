@@ -8,12 +8,12 @@ namespace Booking.Api.Extensions;
 
 public static class ServiceCollectionDbExtensions
 {
-    public static IServiceCollection AddApplicationDbContext(this IServiceCollection services)
+    public static IServiceCollection AddApplicationDbContext(this IServiceCollection services, IConfiguration configuration)
         => services
             .AddDbContext<ApplicationDbContext>(options =>
             {
                 var dataSource = new NpgsqlDataSourceBuilder(
-                        DotNetEnvHelper.GetEnvironmentVariableOrThrow("DB_CONNECTION_STRING"))
+                        configuration["ConnectionStrings:Postgres"]!)
                         .EnableDynamicJson()
                         .Build();
 

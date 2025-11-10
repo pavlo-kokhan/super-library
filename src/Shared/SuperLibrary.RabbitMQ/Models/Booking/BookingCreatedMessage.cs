@@ -1,3 +1,3 @@
 ﻿namespace SuperLibrary.RabbitMQ.Models.Booking;
 
-public record BookingCreatedMessage(DateTime From, DateTime To, int RoomId);
+public record BookingCreatedMessage(int Id, DateTime From, DateTime To, int RoomId);

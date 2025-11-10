@@ -9,9 +9,9 @@ using SuperLibrary.Web.ValidationErrors;
 
 namespace Booking.Api.Application.Commands.Booking;
 
-public record CreateBookingCommand(DateTime From, DateTime To, int RoomId) : IRequest<Result>
+public record CreateBookingCommandEventDrivenApproach(DateTime From, DateTime To, int RoomId) : IRequest<Result>
 {
-    public class Handler : IRequestHandler<CreateBookingCommand, Result>
+    public class Handler : IRequestHandler<CreateBookingCommandEventDrivenApproach, Result>
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly ILibraryService _libraryService;
@@ -24,7 +24,7 @@ public record CreateBookingCommand(DateTime From, DateTime To, int RoomId) : IRe
             _publisher = publisher;
         }
 
-        public async Task<Result> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(CreateBookingCommandEventDrivenApproach request, CancellationToken cancellationToken)
         {
             var room = await _libraryService.GetRoomByIdAsync(request.RoomId, cancellationToken);
 
@@ -39,8 +39,14 @@ public record CreateBookingCommand(DateTime From, DateTime To, int RoomId) : IRe
             await _dbContext.AddAsync(createBookingResult.Data, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            var booking = createBookingResult.Data;
-            await _publisher.PublishAsync(new BookingCreatedMessage(booking.From, booking.To, booking.RoomId), cancellationToken);
+            var bookingEntity = createBookingResult.Data;
+            await _publisher.PublishAsync(
+                new BookingCreatedMessage(
+                    bookingEntity.Id, 
+                    bookingEntity.From, 
+                    bookingEntity.To, 
+                    bookingEntity.RoomId), 
+                cancellationToken);
 
             return Result.Success();
         }

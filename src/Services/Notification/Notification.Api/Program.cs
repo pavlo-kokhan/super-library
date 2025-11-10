@@ -1,13 +1,24 @@
-using DotNetEnv;
 using Notification.Api.Extensions;
-
-Env.Load(Path.Combine(Directory.GetCurrentDirectory(), "config.env"));
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder
+    .Services
+    .AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(serviceName: "Notification.Api", serviceVersion: "1.0.0"))
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation()
+            .AddRabbitMQInstrumentation()
+            .AddOtlpExporter();
+    });
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-builder.Services.AddRabbitMq();
+builder.Services.AddRabbitMq(builder.Configuration);
 builder.Services.AddConsumers();
 
 var app = builder.Build();

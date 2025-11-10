@@ -6,20 +6,32 @@ using Booking.Api.Constants;
 using Booking.Api.Extensions;
 using Booking.Infrastructure;
 using Booking.Infrastructure.Persistence;
-using DotNetEnv;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 using SuperLibrary.Web.Extensions;
 using SuperLibrary.Web.Filters;
-using SuperLibrary.Web.Helpers;
 using SuperLibrary.Web.Pipelines;
 
-Env.Load(Path.Combine(Directory.GetCurrentDirectory(), "config.env"));
-
 var builder = WebApplication.CreateBuilder(args);
+
+builder
+    .Services
+    .AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(serviceName: "Booking.Api", serviceVersion: "1.0.0"))
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation()
+            .AddRabbitMQInstrumentation()
+            .AddOtlpExporter();
+    });
 
 builder
     .Services
@@ -35,7 +47,7 @@ builder
     })
     .AddValidationPipelines(Assembly.GetExecutingAssembly())
     .AddSingleton(typeof(IPipelineBehavior<,>), typeof(DefaultLoggingPipeline<,>))
-    .AddApplicationDbContext()
+    .AddApplicationDbContext(builder.Configuration)
     .AddControllers(options =>
     {
         options.Filters.Add<ModelValidationActionFilterAttribute>();
@@ -45,13 +57,20 @@ builder
     .Services
     .AddScoped<DbSeeder>()
     .AddOpenApi()
-    .AddRabbitMq()
+    .AddRabbitMq(builder.Configuration)
     .AddPublishers()
     .AddScoped<ILibraryService, LibraryService>()
+    .AddScoped<INotificationService, NotificationService>()
     .AddHttpClient(HttpClientNames.Library,
         client =>
         {
-            client.BaseAddress = new Uri(DotNetEnvHelper.GetEnvironmentVariableOrThrow("LIBRARY_BASE_URL"));
+            client.BaseAddress = new Uri(builder.Configuration["Downstream:Library:BaseUrl"]!);
+        })
+    .Services
+    .AddHttpClient(HttpClientNames.Notification,
+        client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["Downstream:Notification:BaseUrl"]!);
         });
 
 var app = builder.Build();
